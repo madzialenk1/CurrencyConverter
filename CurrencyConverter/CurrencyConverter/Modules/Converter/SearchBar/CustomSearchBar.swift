@@ -27,7 +27,7 @@ class CustomSearchBar: UIView {
     
     private let searchLabel: UILabel = {
         let label = UILabel()
-        label.text = "Search"
+        label.text = "search_label".localized()
         label.backgroundColor = .white
         label.textColor = UIColor.lightGray
         label.font = UIFont.systemFont(ofSize: 12)
@@ -35,27 +35,31 @@ class CustomSearchBar: UIView {
     }()
     
     private let searchIconView: UIImageView = {
-        let imageView = UIImageView(image: UIImage(named: "search"))
+        let imageView = UIImageView(image: UIImage(named: Constants.Images.searchIcon))
         imageView.contentMode = .center
         return imageView
     }()
     
     init() {
         super.init(frame: .zero)
-        setupUI()
+        addSubviews()
+        setConstraints()
     }
     
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        setupUI()
+        addSubviews()
+        setConstraints()
     }
     
-    private func setupUI() {
+    private func addSubviews() {
         addSubview(borderView)
         addSubview(searchTextField)
         addSubview(searchLabel)
         addSubview(searchIconView)
-        
+    }
+    
+    private func setConstraints() {
         borderView.snp.makeConstraints {
             $0.edges.equalToSuperview()
             $0.height.equalTo(48)

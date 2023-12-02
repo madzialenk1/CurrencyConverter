@@ -12,4 +12,5 @@ struct ConverterCellUIConfigModel {
     let text: String
     let currencyLabelColor: UIColor
     let currency: String
+    let flag: String
 }

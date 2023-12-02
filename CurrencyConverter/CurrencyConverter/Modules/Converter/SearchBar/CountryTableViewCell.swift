@@ -9,9 +9,6 @@ import UIKit
 import SnapKit
 
 class CountryTableViewCell: UITableViewCell {
-    
-    // MARK: - UI Components
-    
     private let flagImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
@@ -31,25 +28,25 @@ class CountryTableViewCell: UITableViewCell {
         return label
     }()
     
-    // MARK: - Initialization
-    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        setupUI()
+        addSubviews()
+        setConstraints()
     }
     
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        setupUI()
+        addSubviews()
+        setConstraints()
     }
     
-    // MARK: - UI Setup
-    
-    private func setupUI() {
+    private func addSubviews() {
         addSubview(flagImageView)
         addSubview(countryNameLabel)
         addSubview(currencyLabel)
-        
+    }
+    
+    private func setConstraints() {
         flagImageView.snp.makeConstraints {
             $0.leading.equalToSuperview().offset(16)
             $0.centerY.equalToSuperview()
@@ -66,8 +63,6 @@ class CountryTableViewCell: UITableViewCell {
             $0.top.equalTo(countryNameLabel.snp.bottom).offset(4)
         }
     }
-    
-    // MARK: - Configuration
     
     func configure(with country: Country) {
         flagImageView.image = UIImage(named: country.flagIconName)

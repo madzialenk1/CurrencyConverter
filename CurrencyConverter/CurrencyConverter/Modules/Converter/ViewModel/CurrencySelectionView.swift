@@ -11,9 +11,6 @@ import RxCocoa
 import SnapKit
 
 class CurrencySelectionView: UIControl {
-    
-    // MARK: - UI Components
-    
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.textColor = CustomColors.lightGrey
@@ -38,38 +35,41 @@ class CurrencySelectionView: UIControl {
     
     fileprivate let arrowButton: UIButton = {
         let button = UIButton()
-        button.setImage(UIImage(named: "chevron-down"), for: .normal)
+        button.setImage(UIImage(named: Constants.Images.arrowDownIcon), for: .normal)
         return button
     }()
     
-    private let amountLabel: UILabel = {
-        let label = UILabel()
-        label.textAlignment = .center
-        label.text = "10000"
-        label.font = UIFont.systemFont(ofSize: 32, weight: .bold)
-        label.textColor = CustomColors.lightBlue
-        return label
+    let amountLabel: UITextField = {
+        let textField = UITextField()
+        textField.textAlignment = .right
+        textField.text = "300"
+        textField.font = UIFont.systemFont(ofSize: 32, weight: .bold)
+        textField.textColor = CustomColors.lightBlue
+        textField.keyboardType = .numberPad
+        return textField
     }()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        setupUI()
+        addSubviews()
+        setConstraints()
     }
     
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        setupUI()
+        addSubviews()
+        setConstraints()
     }
     
-    // MARK: - UI Setup
-    
-    private func setupUI() {
+    private func addSubviews() {
         addSubview(titleLabel)
         addSubview(flagImageView)
         addSubview(arrowButton)
         addSubview(amountLabel)
         addSubview(currencyLabel)
-        
+    }
+    
+    private func setConstraints() {
         titleLabel.snp.makeConstraints {
             $0.top.equalToSuperview().offset(16)
             $0.leading.equalToSuperview().offset(12)
@@ -82,6 +82,7 @@ class CurrencySelectionView: UIControl {
         }
         
         currencyLabel.snp.makeConstraints {
+            $0.width.equalTo(32)
             $0.top.equalTo(titleLabel.snp.bottom).offset(10)
             $0.leading.equalTo(flagImageView.snp.trailing).offset(8)
         }
@@ -94,7 +95,8 @@ class CurrencySelectionView: UIControl {
         
         amountLabel.snp.makeConstraints {
             $0.centerY.equalToSuperview()
-            $0.trailing.equalToSuperview().offset(-12)
+            $0.leading.equalTo(arrowButton.snp.trailing).offset(10)
+            $0.trailing.equalToSuperview().offset(-10)
         }
     }
     
@@ -102,6 +104,12 @@ class CurrencySelectionView: UIControl {
         amountLabel.textColor = model.currencyLabelColor
         titleLabel.text = model.text
         currencyLabel.text = model.currency
+        flagImageView.image = UIImage(named: model.flag)
+    }
+    
+    func configure(model: Country) {
+        currencyLabel.text = model.currency
+        flagImageView.image = UIImage(named: model.flagIconName)
     }
 }
 

@@ -10,10 +10,9 @@ import SnapKit
 import RxSwift
 
 class SearchViewController: UIViewController {
-    
     private let sendingToLabel: UILabel = {
         let label = UILabel()
-        label.text = "Sending to"
+        label.text = "sending_to_label".localized()
         label.font = UIFont.boldSystemFont(ofSize: 18)
         return label
     }()
@@ -25,7 +24,7 @@ class SearchViewController: UIViewController {
     
     private let allCountriesLabel: UILabel = {
         let label = UILabel()
-        label.text = "All countries"
+        label.text = "all_countries_label".localized()
         label.font = UIFont.boldSystemFont(ofSize: 16)
         return label
     }()
@@ -52,16 +51,19 @@ class SearchViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        setupUI()
+        addSubviews()
         setRx()
+        setConstraints()
     }
     
-    private func setupUI() {
+    private func addSubviews() {
         view.addSubview(sendingToLabel)
         view.addSubview(searchBar)
         view.addSubview(allCountriesLabel)
         view.addSubview(tableView)
-        
+    }
+    
+    private func setConstraints() {
         sendingToLabel.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(16)
             $0.leading.equalToSuperview().offset(16)
@@ -99,12 +101,12 @@ class SearchViewController: UIViewController {
             }
             .disposed(by: disposedBag)
         
-        Observable.combineLatest(tableView.rx.modelSelected(Country.self), viewModel.selectionSourceSubject)
+        Observable.combineLatest(tableView.rx.modelSelected(Country.self), viewModel.selectionSource)
             .subscribe(onNext: { [weak self] country, selection in
                 if let indexPath = self?.tableView.indexPathForSelectedRow {
                     self?.tableView.deselectRow(at: indexPath, animated: true)
                 }
-                selection == .from ? self?.viewModel.selectedCountryFrom.accept(   country.currency) : self?.viewModel.selectedCountryTo.accept(   country.currency)
+                selection == .from ? self?.viewModel.selectedCurrencyFrom.accept(country) : self?.viewModel.selectedCurrencyTo.accept(country)
                 self?.dismiss(animated: true)
                 
             })

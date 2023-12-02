@@ -13,7 +13,7 @@ class CurrencyConverterCoordinator : CurrencyConverterCalculatorDelegate {
     var navigationController: UINavigationController?
     
     func start() {
-        let viewModel = CurrencyConverterViewModel()
+        let viewModel = CurrencyConverterViewModel(networkService: NetworkService())
         let viewController = CurrencyConverterViewController(coordinator: self as CurrencyConverterCalculatorDelegate, viewModel: viewModel)
         navigationController?.pushViewController(viewController, animated: true)
     }

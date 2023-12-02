@@ -1,0 +1,15 @@
+/* 
+  Localizable.strings
+  CurrencyConverter
+
+  Created by Magda Pękacka on 02/12/2023.
+  
+*/
+
+"sending_to_label" = "Sending to";
+"all_countries_label" = "All countries";
+"search_label" = "Search";
+"currency_selection_from_label" = "Sending from";
+"currency_selection_to_label" = "Reciever gets";
+"max_amount_sending_error_message"= "Maximum sending amount %d%% %d%%";
+

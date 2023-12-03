@@ -62,7 +62,7 @@ class CurrencyConverterViewController: UIViewController {
         label.textColor = .white
         label.backgroundColor = .black
         label.layer.cornerRadius = 6
-        label.font = UIFont.systemFont(ofSize: 10)
+        label.font = UIFont.systemFont(ofSize: 10, weight: .bold)
         label.layer.masksToBounds = true
         label.textAlignment = .center
         return label
@@ -128,6 +128,7 @@ class CurrencyConverterViewController: UIViewController {
         
         errorMessage.snp.makeConstraints {
             $0.top.equalTo(contentView.snp.bottom).offset(24)
+            $0.centerX.equalToSuperview()
             $0.leading.trailing.equalTo(15)
         }
     }
@@ -155,11 +156,7 @@ class CurrencyConverterViewController: UIViewController {
         if !value.isEmpty {
             updateAmountLabel(value, selectionView: selectionView)
             updateViewModelValues(value, selection: selection)
-            if selection == .to {
-                viewModel.getRateValues()
-            } else {
-                handleAmountValidation(value)
-            }
+            handleAmountValidation(viewModel.currencyConverterFrom.value)
         } else {
             resetAmountLabels()
         }
@@ -177,12 +174,11 @@ class CurrencyConverterViewController: UIViewController {
         }
     }
     
-    private func handleAmountValidation(_ value: String) {
-        let doubleValue = Double(value) ?? 0.0
-        if doubleValue <= Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency ] ?? 28000.0 {
+    private func handleAmountValidation(_ value: Double) {
+        if value <= Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue ] ?? 28000.0 {
             handleValidAmount()
         } else {
-            handleInvalidAmount(doubleValue)
+            handleInvalidAmount(Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue ] ?? 28000.0)
         }
     }
     
@@ -195,15 +191,16 @@ class CurrencyConverterViewController: UIViewController {
     
     private func handleInvalidAmount(_ doubleValue: Double) {
         currencySelectionFrom.layer.borderWidth = 2
-        currencySelectionFrom.layer.borderColor = UIColor.red.cgColor
-        currencySelectionFrom.amountLabel.textColor = .red
+        currencySelectionFrom.layer.borderColor = CustomColors.customRed.cgColor
+        currencySelectionFrom.amountLabel.textColor = CustomColors.customRed
         errorMessage.isHidden = false
-        let errorMessageString = String(format: "max_amount_sending_error_message".localized(), Int(doubleValue), self.viewModel.selectedCurrencyFrom.value.currency)
+        let errorMessageString = String(format: "max_amount_sending_error_message".localized(), Int(doubleValue), self.viewModel.selectedCurrencyFrom.value.currency.rawValue)
         errorMessage.configure(text: errorMessageString)
     }
     
     private func resetAmountLabels() {
         currencySelectionTo.amountLabel.text = ""
+        currencySelectionFrom.amountLabel.text = ""
         currencySelectionFrom.amountLabel.placeholder = "0"
         currencySelectionTo.amountLabel.placeholder = "0"
     }
@@ -211,21 +208,27 @@ class CurrencyConverterViewController: UIViewController {
     private func updateAmountLabels(with response: FxRateResponse) {
         if viewModel.selectionSource.value == .from {
             currencySelectionTo.amountLabel.text = String(response.toAmount)
+            
         } else {
-            currencySelectionFrom.amountLabel.text = String(response.fromAmount)
+            currencySelectionFrom.amountLabel.text = String(response.toAmount)
+        }
+        let condition = viewModel.selectionSource.value == .from ? response.fromAmount : response.toAmount
+        if condition >= Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue] ?? 28000.0 {
+            handleInvalidAmount(Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue] ?? 0.0)
         }
     }
     
     private func updateConverterLabel(with response: FxRateResponse) {
-        let formattedResult = String(format: "%.5f", response.rate)
+        let selection = viewModel.selectionSource.value
+        let formattedResult = String(format: "%.5f", selection == .from ? response.rate : 1/response.rate)
         let fromCurrency = viewModel.selectedCurrencyFrom.value.currency
         let toCurrency = viewModel.selectedCurrencyTo.value.currency
-        currencyConverterLabel.text = "1 \(fromCurrency) = \(formattedResult)\(toCurrency)"
+        currencyConverterLabel.text = "1 \(fromCurrency) ~ \(formattedResult) \(toCurrency)"
     }
     
     private func setRx() {
-        setRx(for: currencySelectionFrom, selection: .from)
         setRx(for: currencySelectionTo, selection: .to)
+        setRx(for: currencySelectionFrom, selection: .from)
         
         Observable.combineLatest(viewModel.selectedCurrencyFrom, viewModel.selectedCurrencyTo)
             .bind { [weak self] selectedCountryFrom, selectedCountryTo in

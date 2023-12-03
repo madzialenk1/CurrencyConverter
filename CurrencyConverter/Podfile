@@ -9,6 +9,7 @@ target 'CurrencyConverter' do
 	pod 'RxSwift'
   	pod 'RxCocoa'
   	pod 'SnapKit'
+	pod 'RxReachability'
 
   target 'CurrencyConverterTests' do
     inherit! :search_paths

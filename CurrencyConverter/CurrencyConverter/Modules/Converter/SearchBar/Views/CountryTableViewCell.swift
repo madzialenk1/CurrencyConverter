@@ -67,6 +67,6 @@ class CountryTableViewCell: UITableViewCell {
     func configure(with country: Country) {
         flagImageView.image = UIImage(named: country.flagIconName)
         countryNameLabel.text = country.name
-        currencyLabel.text = country.currency
+        currencyLabel.text = "\(country.currency.fullName) • \(country.currency.rawValue)"
     }
 }

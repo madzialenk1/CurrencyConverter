@@ -11,6 +11,6 @@ import Foundation
 
 struct Country {
     let name: String
-    let currency: String
+    let currency: Currency
     let flagIconName: String
 }

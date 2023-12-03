@@ -7,9 +7,10 @@
 */
 
 "sending_to_label" = "Sending to";
+"sending_from_label" = "Sending from";
 "all_countries_label" = "All countries";
 "search_label" = "Search";
 "currency_selection_from_label" = "Sending from";
 "currency_selection_to_label" = "Reciever gets";
-"max_amount_sending_error_message"= "Maximum sending amount %d%% %d%%";
-
+"max_amount_sending_error_message"= "Maximum sending amount %d %@";
+"no_result_view" = "No result found";

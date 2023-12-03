@@ -10,10 +10,10 @@ import Foundation
 struct Constants {
     static let baseURL = "https://my.transfergo.com/api"
     static let countries: [Country] = [
-        Country(name: "Ukraine", currency: "UAH", flagIconName: "ukrainian_flag"),
-        Country(name: "Great Britain", currency: "GBP", flagIconName: "uk_flag"),
-        Country(name: "Germany", currency: "EUR", flagIconName: "german_flag"),
-        Country(name: "Poland", currency: "PLN", flagIconName: "polish_flag"),
+        Country(name: "Ukraine", currency: Currency.UAH, flagIconName: "ukrainian_flag"),
+        Country(name: "Great Britain", currency: Currency.GBP, flagIconName: "uk_flag"),
+        Country(name: "Germany", currency: Currency.EUR, flagIconName: "german_flag"),
+        Country(name: "Poland", currency: Currency.PLN, flagIconName: "polish_flag"),
     ]
     
     static let currencyLimits: [String: Double] = [

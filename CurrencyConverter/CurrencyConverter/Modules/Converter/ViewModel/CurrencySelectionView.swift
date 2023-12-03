@@ -39,13 +39,14 @@ class CurrencySelectionView: UIControl {
         return button
     }()
     
-    let amountLabel: UITextField = {
+    lazy var amountLabel: UITextField = {
         let textField = UITextField()
         textField.textAlignment = .right
         textField.text = "300"
         textField.font = UIFont.systemFont(ofSize: 32, weight: .bold)
         textField.textColor = CustomColors.lightBlue
         textField.keyboardType = .numberPad
+        textField.delegate = self
         return textField
     }()
     
@@ -83,6 +84,7 @@ class CurrencySelectionView: UIControl {
         
         currencyLabel.snp.makeConstraints {
             $0.width.equalTo(32)
+            $0.centerY.equalTo(flagImageView)
             $0.top.equalTo(titleLabel.snp.bottom).offset(10)
             $0.leading.equalTo(flagImageView.snp.trailing).offset(8)
         }
@@ -108,7 +110,7 @@ class CurrencySelectionView: UIControl {
     }
     
     func configure(model: Country) {
-        currencyLabel.text = model.currency
+        currencyLabel.text = model.currency.rawValue
         flagImageView.image = UIImage(named: model.flagIconName)
     }
 }
@@ -116,5 +118,13 @@ class CurrencySelectionView: UIControl {
 extension Reactive where Base: CurrencySelectionView {
     var arrowButtonTapped: ControlEvent<Void> {
         return base.arrowButton.rx.tap
+    }
+}
+
+extension CurrencySelectionView : UITextFieldDelegate{
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        let allowedCharacters = CharacterSet.decimalDigits
+        let isValidInput = string.rangeOfCharacter(from: allowedCharacters.inverted) == nil
+        return isValidInput
     }
 }

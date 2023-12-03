@@ -12,6 +12,7 @@ import RxSwift
 class SearchViewController: UIViewController {
     private let sendingToLabel: UILabel = {
         let label = UILabel()
+        label.textAlignment = .center
         label.text = "sending_to_label".localized()
         label.font = UIFont.boldSystemFont(ofSize: 18)
         return label
@@ -35,6 +36,8 @@ class SearchViewController: UIViewController {
         tableView.rowHeight = 60
         return tableView
     }()
+    
+    private let noResultView = NoResultView()
     
     private let disposedBag = DisposeBag()
     private let viewModel: CurrencyConverterViewModel
@@ -66,27 +69,40 @@ class SearchViewController: UIViewController {
     private func setConstraints() {
         sendingToLabel.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(16)
-            $0.leading.equalToSuperview().offset(16)
+            $0.leading.trailing.equalToSuperview().offset(16)
         }
         
         searchBar.snp.makeConstraints {
-            $0.top.equalTo(sendingToLabel.snp.bottom).offset(8)
+            $0.top.equalTo(sendingToLabel.snp.bottom).offset(20)
             $0.leading.trailing.equalToSuperview().inset(16)
         }
         
         allCountriesLabel.snp.makeConstraints {
-            $0.top.equalTo(searchBar.snp.bottom).offset(16)
+            $0.top.equalTo(searchBar.snp.bottom).offset(20)
             $0.leading.equalToSuperview().offset(16)
         }
         
         tableView.snp.makeConstraints {
-            $0.top.equalTo(allCountriesLabel.snp.bottom).offset(8)
+            $0.top.equalTo(allCountriesLabel.snp.bottom).offset(12)
             $0.leading.trailing.bottom.equalToSuperview()
         }
     }
     
     private func setRx() {
+        viewModel.selectionSource
+            .bind {[weak self] selection in
+                self?.sendingToLabel.text = selection == .from ? "sending_from_label".localized() : "sending_to_label".localized()
+            }.disposed(by: disposedBag)
+        
         viewModel.filteredCountries
+            .do(onNext: { [weak self] countries in
+                if countries.isEmpty {
+                    guard let view = self?.noResultView else { return }
+                    self?.tableView.backgroundView = view
+                } else {
+                    self?.tableView.backgroundView = nil
+                }
+            })
             .bind(to: tableView.rx.items(cellIdentifier: "CountryCell", cellType: CountryTableViewCell.self)) { (_, country, cell) in
                 cell.configure(with: country)
             }

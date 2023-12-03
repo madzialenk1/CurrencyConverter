@@ -8,12 +8,14 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import RxReachability
+import Reachability
 
 class CurrencyConverterViewModel {    
     let filteredCountries = BehaviorSubject<[Country]>(value: [])
     
-    let selectedCurrencyFrom = BehaviorRelay<Country>(value: Country(name: "Poland", currency: "PLN", flagIconName: Constants.Images.polishFlag))
-    let selectedCurrencyTo = BehaviorRelay<Country>(value: Country(name: "Ukraine", currency: "UAH", flagIconName: Constants.Images.ukrainianFlag))
+    let selectedCurrencyFrom = BehaviorRelay<Country>(value: Country(name: "Poland", currency: Currency.PLN, flagIconName: Constants.Images.polishFlag))
+    let selectedCurrencyTo = BehaviorRelay<Country>(value: Country(name: "Ukraine", currency: Currency.UAH, flagIconName: Constants.Images.ukrainianFlag))
     let currencyConverterFrom = BehaviorRelay<Double>(value: 300)
     let currencyConverterTo = BehaviorRelay<Double>(value: 1)
     let selectionSource = BehaviorRelay<SelectionSource>(value: .from)
@@ -24,6 +26,7 @@ class CurrencyConverterViewModel {
     
     init(networkService: NetworkService) {
         self.networkService = networkService
+        getRateValues()
     }
     
     func filterCountries(by searchText: String) {
@@ -43,11 +46,24 @@ class CurrencyConverterViewModel {
         selectedCurrencyTo.accept(tempValue)
     }
     
+    private func checkInternetConnection() {
+        ReachabilityManager.shared.isInternetAvailable
+            .subscribe(onNext: { isAvailable in
+                if !isAvailable {
+                    print("no internet")
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    
     func getRateValues() {
+        checkInternetConnection()
+        let selection = selectionSource.value
         let parameters: [String: Any] = [
-            "from": selectedCurrencyFrom.value.currency,
-            "to": selectedCurrencyTo.value.currency,
-            "amount": currencyConverterFrom.value
+            "from": selection == .to ? selectedCurrencyTo.value.currency : selectedCurrencyFrom.value.currency,
+            "to": selection == .to ? selectedCurrencyFrom.value.currency : selectedCurrencyTo.value.currency,
+            "amount": selection == .from ? currencyConverterFrom.value : currencyConverterTo.value
         ]
         
         networkService.requestData(from: .rates, parameters: parameters)

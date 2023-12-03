@@ -11,14 +11,14 @@ import SnapKit
 
 class ErrorLabel: UIView {
     private let errorText: UILabel = {
-      let label = UILabel()
-        label.textColor = .red
+        let label = UILabel()
+        label.textColor = CustomColors.customRed
         label.font = UIFont.systemFont(ofSize: 14)
         return label
     }()
     
     private let errorImage: UIImageView = {
-       let imageView = UIImageView()
+        let imageView = UIImageView()
         imageView.image = UIImage(named: Constants.Images.alertIcon)
         return imageView
     }()

@@ -173,7 +173,8 @@ class CurrencyConverterViewController: UIViewController {
             .bind { [weak self] selectedCountryFrom, selectedCountryTo in
                 self?.currencySelectionTo.configure(model: selectedCountryTo)
                 self?.currencySelectionFrom.configure(model: selectedCountryFrom)
-                self?.viewModel.getRateValues()
+                let selection = self?.viewModel.selectionSource.value
+                self?.viewModel.handleAmountInput(selection == .from ? self?.currencySelectionFrom.amountLabel.text ?? "0" : self?.currencySelectionTo.amountLabel.text ?? "0", selection: selection ?? .from)
             }
             .disposed(by: disposedBag)
         
@@ -201,16 +202,7 @@ class CurrencyConverterViewController: UIViewController {
         viewModel.validAmount
             .compactMap {$0}
             .bind { [weak self] isValid in
-                if isValid {
-                    self?.errorMessage.isHidden = true
-                    self?.currencySelectionFrom.layer.borderWidth = 0
-                    self?.currencySelectionFrom.amountLabel.textColor = CustomColors.lightBlue
-                } else {
-                    self?.currencySelectionFrom.layer.borderWidth = 2
-                    self?.currencySelectionFrom.layer.borderColor = CustomColors.customRed.cgColor
-                    self?.currencySelectionFrom.amountLabel.textColor = CustomColors.customRed
-                    self?.errorMessage.isHidden = false
-                }
+                self?.handleValidAmount(isValid: isValid)
             }
             .disposed(by: disposedBag)
         
@@ -242,12 +234,26 @@ class CurrencyConverterViewController: UIViewController {
             })
             .disposed(by: disposedBag)
         
-//        viewModel.isInternetAvailable
-//            .compactMap {$0}
-//            .bind { [weak self] isAvailable in
-//                self?.handleLayer(isAvailable: isAvailable)
-//            }
-//            .disposed(by: disposedBag)
+        // TODO: it detects the internet state weirdly on the simulator - to be fixed
+        //        viewModel.isInternetAvailable
+        //            .compactMap {$0}
+        //            .bind { [weak self] isAvailable in
+        //                self?.handleLayer(isAvailable: isAvailable)
+        //            }
+        //            .disposed(by: disposedBag)
+    }
+    
+    private func handleValidAmount(isValid: Bool) {
+        if isValid {
+            errorMessage.isHidden = true
+            currencySelectionFrom.layer.borderWidth = 0
+            currencySelectionFrom.amountLabel.textColor = CustomColors.lightBlue
+        } else {
+            currencySelectionFrom.layer.borderWidth = 2
+            currencySelectionFrom.layer.borderColor = CustomColors.customRed.cgColor
+            currencySelectionFrom.amountLabel.textColor = CustomColors.customRed
+            errorMessage.isHidden = false
+        }
     }
     
     private func handleLayer(isAvailable: Bool) {

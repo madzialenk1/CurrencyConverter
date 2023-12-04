@@ -11,7 +11,7 @@ import SnapKit
 import RxSwift
 import RxCocoa
 
-protocol CurrencyConverterCalculatorDelegate {
+protocol CurrencyConverterCalculatorDelegate: AnyObject {
     func openSearch(viewModel: CurrencyConverterViewModel)
 }
 
@@ -47,6 +47,13 @@ class CurrencyConverterViewController: UIViewController {
         return stackView
     }()
     
+    private let blurLayer: CALayer = {
+        let layer = CALayer()
+        layer.backgroundColor = UIColor.white.cgColor
+        layer.opacity = 0.5
+        return layer
+    }()
+    
     private let contentView = UIView()
     
     private let reverseButton: UIButton = {
@@ -71,7 +78,7 @@ class CurrencyConverterViewController: UIViewController {
     private let errorMessage = ErrorLabel()
     
     private let viewModel: CurrencyConverterViewModel
-    private let coordinator: CurrencyConverterCalculatorDelegate?
+    private weak var coordinator: CurrencyConverterCalculatorDelegate?
     private let disposedBag = DisposeBag()
     
     init(coordinator: CurrencyConverterCalculatorDelegate, viewModel: CurrencyConverterViewModel) {
@@ -129,7 +136,6 @@ class CurrencyConverterViewController: UIViewController {
         errorMessage.snp.makeConstraints {
             $0.top.equalTo(contentView.snp.bottom).offset(24)
             $0.centerX.equalToSuperview()
-            $0.leading.trailing.equalTo(15)
         }
     }
     
@@ -147,55 +153,9 @@ class CurrencyConverterViewController: UIViewController {
             .map { $0 }
             .bind(onNext: { [weak self] value in
                 self?.viewModel.selectionSource.accept(selection)
-                self?.handleAmountInput(value, selection: selection, selectionView: selectionView)
+                self?.viewModel.handleAmountInput(value, selection: selection)
             })
             .disposed(by: disposedBag)
-    }
-    
-    private func handleAmountInput(_ value: String, selection: SelectionSource, selectionView: CurrencySelectionView) {
-        if !value.isEmpty {
-            updateAmountLabel(value, selectionView: selectionView)
-            updateViewModelValues(value, selection: selection)
-            handleAmountValidation(viewModel.currencyConverterFrom.value)
-        } else {
-            resetAmountLabels()
-        }
-    }
-    
-    private func updateAmountLabel(_ value: String, selectionView: CurrencySelectionView) {
-        selectionView.amountLabel.text = "\(value)"
-    }
-    
-    private func updateViewModelValues(_ value: String, selection: SelectionSource) {
-        if selection == .from {
-            self.viewModel.currencyConverterFrom.accept(Double(value) ?? 0.0)
-        } else {
-            self.viewModel.currencyConverterTo.accept(Double(value) ?? 0.0)
-        }
-    }
-    
-    private func handleAmountValidation(_ value: Double) {
-        if value <= Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue ] ?? 28000.0 {
-            handleValidAmount()
-        } else {
-            handleInvalidAmount(Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue ] ?? 28000.0)
-        }
-    }
-    
-    private func handleValidAmount() {
-        errorMessage.isHidden = true
-        viewModel.getRateValues()
-        currencySelectionFrom.layer.borderWidth = 0
-        currencySelectionFrom.amountLabel.textColor = CustomColors.lightBlue
-    }
-    
-    private func handleInvalidAmount(_ doubleValue: Double) {
-        currencySelectionFrom.layer.borderWidth = 2
-        currencySelectionFrom.layer.borderColor = CustomColors.customRed.cgColor
-        currencySelectionFrom.amountLabel.textColor = CustomColors.customRed
-        errorMessage.isHidden = false
-        let errorMessageString = String(format: "max_amount_sending_error_message".localized(), Int(doubleValue), self.viewModel.selectedCurrencyFrom.value.currency.rawValue)
-        errorMessage.configure(text: errorMessageString)
     }
     
     private func resetAmountLabels() {
@@ -203,27 +163,6 @@ class CurrencyConverterViewController: UIViewController {
         currencySelectionFrom.amountLabel.text = ""
         currencySelectionFrom.amountLabel.placeholder = "0"
         currencySelectionTo.amountLabel.placeholder = "0"
-    }
-    
-    private func updateAmountLabels(with response: FxRateResponse) {
-        if viewModel.selectionSource.value == .from {
-            currencySelectionTo.amountLabel.text = String(response.toAmount)
-            
-        } else {
-            currencySelectionFrom.amountLabel.text = String(response.toAmount)
-        }
-        let condition = viewModel.selectionSource.value == .from ? response.fromAmount : response.toAmount
-        if condition >= Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue] ?? 28000.0 {
-            handleInvalidAmount(Constants.currencyLimits[viewModel.selectedCurrencyFrom.value.currency.rawValue] ?? 0.0)
-        }
-    }
-    
-    private func updateConverterLabel(with response: FxRateResponse) {
-        let selection = viewModel.selectionSource.value
-        let formattedResult = String(format: "%.5f", selection == .from ? response.rate : 1/response.rate)
-        let fromCurrency = viewModel.selectedCurrencyFrom.value.currency
-        let toCurrency = viewModel.selectedCurrencyTo.value.currency
-        currencyConverterLabel.text = "1 \(fromCurrency) ~ \(formattedResult) \(toCurrency)"
     }
     
     private func setRx() {
@@ -242,8 +181,14 @@ class CurrencyConverterViewController: UIViewController {
             .observe(on: MainScheduler.instance)
             .compactMap { $0 }
             .bind { [weak self] result in
-                self?.updateAmountLabels(with: result)
-                self?.updateConverterLabel(with: result)
+                if self?.viewModel.selectionSource.value == .from {
+                    self?.currencySelectionTo.amountLabel.text = String(result.toAmount)
+                    
+                } else {
+                    self?.currencySelectionFrom.amountLabel.text = String(result.toAmount)
+                }
+                self?.viewModel.updateAmountLabels(with: result)
+                self?.viewModel.updateConverterLabel(with: result)
             }
             .disposed(by: disposedBag)
         
@@ -253,5 +198,67 @@ class CurrencyConverterViewController: UIViewController {
             }
             .disposed(by: disposedBag)
         
+        viewModel.validAmount
+            .compactMap {$0}
+            .bind { [weak self] isValid in
+                if isValid {
+                    self?.errorMessage.isHidden = true
+                    self?.currencySelectionFrom.layer.borderWidth = 0
+                    self?.currencySelectionFrom.amountLabel.textColor = CustomColors.lightBlue
+                } else {
+                    self?.currencySelectionFrom.layer.borderWidth = 2
+                    self?.currencySelectionFrom.layer.borderColor = CustomColors.customRed.cgColor
+                    self?.currencySelectionFrom.amountLabel.textColor = CustomColors.customRed
+                    self?.errorMessage.isHidden = false
+                }
+            }
+            .disposed(by: disposedBag)
+        
+        viewModel.errorMessage
+            .compactMap {$0}
+            .bind {[weak self] message in
+                self?.errorMessage.isHidden = false
+                self?.errorMessage.configure(text: message)
+            }
+            .disposed(by: disposedBag)
+        
+        viewModel.resetValues
+            .bind {[weak self] _ in
+                self?.resetAmountLabels()
+            }
+            .disposed(by: disposedBag)
+        
+        viewModel.currencyConverterLabel
+            .bind(to: currencyConverterLabel.rx.text)
+            .disposed(by: disposedBag)
+        
+        Observable.combineLatest(viewModel.amountString, viewModel.selectionSource)
+            .bind(onNext: { [weak self] (text, selection) in
+                if selection == .from {
+                    self?.currencySelectionFrom.amountLabel.text = text
+                } else {
+                    self?.currencySelectionTo.amountLabel.text = text
+                }
+            })
+            .disposed(by: disposedBag)
+        
+//        viewModel.isInternetAvailable
+//            .compactMap {$0}
+//            .bind { [weak self] isAvailable in
+//                self?.handleLayer(isAvailable: isAvailable)
+//            }
+//            .disposed(by: disposedBag)
+    }
+    
+    private func handleLayer(isAvailable: Bool) {
+        if !isAvailable {
+            view.layer.insertSublayer(blurLayer, at: 1)
+            blurLayer.frame = view.bounds
+            currencyConverterLabel.text = "---"
+            currencyConverterLabel.backgroundColor = .gray
+            currencySelectionTo.amountLabel.text = "-"
+        } else {
+            blurLayer.removeFromSuperlayer()
+        }
     }
 }

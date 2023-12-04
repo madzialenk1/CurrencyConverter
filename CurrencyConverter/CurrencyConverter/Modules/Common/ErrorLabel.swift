@@ -12,6 +12,7 @@ import SnapKit
 class ErrorLabel: UIView {
     private let errorText: UILabel = {
         let label = UILabel()
+        label.textAlignment = .left
         label.textColor = CustomColors.customRed
         label.font = UIFont.systemFont(ofSize: 14)
         return label
@@ -23,9 +24,17 @@ class ErrorLabel: UIView {
         return imageView
     }()
     
-    func configure(text: String) {
+    init() {
+        super.init(frame: .zero)
         addSubviews()
         setConstraints()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func configure(text: String) {
         errorText.text = text
     }
     
@@ -38,13 +47,12 @@ class ErrorLabel: UIView {
         errorImage.snp.makeConstraints {
             $0.leading.equalToSuperview()
             $0.size.equalTo(16)
-            $0.centerY.equalToSuperview()
         }
         
         errorText.snp.makeConstraints {
             $0.leading.equalTo(errorImage.snp.trailing).offset(3)
-            $0.centerY.equalToSuperview()
             $0.trailing.equalToSuperview()
         }
     }
 }
+

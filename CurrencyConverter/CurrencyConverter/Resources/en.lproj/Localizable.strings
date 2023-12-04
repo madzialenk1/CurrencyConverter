@@ -14,3 +14,4 @@
 "currency_selection_to_label" = "Reciever gets";
 "max_amount_sending_error_message"= "Maximum sending amount %d %@";
 "no_result_view" = "No result found";
+"no_internet_connection_error" = "No internet connection";

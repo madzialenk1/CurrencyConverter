@@ -17,47 +17,62 @@ enum NetworkError: Error {
     case requestFailed
 }
 
-class NetworkService {
-    func requestData(from endpoint: APIEndpoint, parameters: [String: Any]? = nil, headers: [String: String]? = nil) -> Observable<Data> {
+protocol NetworkServiceProtocol {
+    func requestData(from endpoint: APIEndpoint, parameters: [String: Any]?, headers: [String: String]?) -> Single<Data>
+    func addParameters(to urlComponents: inout URLComponents, parameters: [String: Any]?)
+    func addHeaders(to request: inout URLRequest, headers: [String: String]?)
+    func requestObject<T: Decodable>(from endpoint: APIEndpoint, parameters: [String: Any]?, responseType: T.Type) -> Single<T>
+}
+
+class NetworkService: NetworkServiceProtocol {
+    let disposeBag = DisposeBag()
+    
+    func requestData(from endpoint: APIEndpoint, parameters: [String: Any]? = nil, headers: [String: String]? = nil) -> Single<Data> {
         guard var urlComponents = URLComponents(string: Constants.baseURL + "/" + endpoint.rawValue) else {
-            return Observable.error(NetworkError.invalidURL)
+            return Single.error(NetworkError.invalidURL)
         }
         
-        if let parameters = parameters {
-            urlComponents.queryItems = parameters.map { URLQueryItem(name: $0.key, value: String(describing: $0.value)) }
-        }
+        addParameters(to: &urlComponents, parameters: parameters)
         
         guard let url = urlComponents.url else {
-            return Observable.error(NetworkError.invalidURL)
+            return Single.error(NetworkError.invalidURL)
         }
         
         var request = URLRequest(url: url)
+        addHeaders(to: &request, headers: headers)
         
+        return URLSession.shared.rx.data(request: request).asSingle()
+    }
+    
+    internal func addParameters(to urlComponents: inout URLComponents, parameters: [String: Any]?) {
+        if let parameters = parameters {
+            urlComponents.queryItems = parameters.map { URLQueryItem(name: $0.key, value: String(describing: $0.value)) }
+        }
+    }
+    
+    internal func addHeaders(to request: inout URLRequest, headers: [String: String]?) {
         headers?.forEach { key, value in
             request.addValue(value, forHTTPHeaderField: key)
         }
-        
-        return Observable.create { observer in
-            let task = URLSession.shared.dataTask(with: request) { data, response, error in
-                if let error = error {
-                    observer.onError(error)
-                    return
-                }
-                
-                guard let data = data else {
-                    observer.onError(NetworkError.requestFailed)
-                    return
-                }
-                
-                observer.onNext(data)
-                observer.onCompleted()
-            }
+    }
+    
+    func requestObject<T: Decodable>(from endpoint: APIEndpoint, parameters: [String: Any]? = nil, responseType: T.Type) -> Single<T> {
+        return Single.create {[weak self] single in
+            self?.requestData(from: endpoint, parameters: parameters)
+                .subscribe(onSuccess: { data in
+                    do {
+                        let decoder = JSONDecoder()
+                        let responseObject = try decoder.decode(T.self, from: data)
+                        single(.success(responseObject))
+                    } catch {
+                        single(.failure(error))
+                    }
+                }, onFailure: { error in
+                    single(.failure(error))
+                })
+                .disposed(by: self?.disposeBag ?? DisposeBag())
             
-            task.resume()
-            
-            return Disposables.create {
-                task.cancel()
-            }
+            return Disposables.create()
         }
     }
 }

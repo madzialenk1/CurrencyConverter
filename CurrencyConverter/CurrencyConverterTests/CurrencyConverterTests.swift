@@ -6,31 +6,93 @@
 //
 
 import XCTest
+import RxSwift
+import RxTest
+
 @testable import CurrencyConverter
 
-final class CurrencyConverterTests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+class CurrencyConverterViewModelTests: XCTestCase {
+    var viewModel: CurrencyConverterViewModel!
+    var disposeBag: DisposeBag!
+    
+    override func setUp() {
+        super.setUp()
+        disposeBag = DisposeBag()
+        viewModel = CurrencyConverterViewModel(networkService: MockNetworkService())
     }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    
+    override func tearDown() {
+        disposeBag = nil
+        viewModel = nil
+        super.tearDown()
     }
-
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
+    
+    // MARK: - Tests
+    
+    func testFilterCountriesWhenSearchTextIsEmpty() {
+        let expectedCountries = Constants.countries
+        
+        var observedCountries: [Country] = []
+        _ = viewModel.filteredCountries
+            .subscribe(onNext: { countries in
+                observedCountries = countries
+            })
+            .disposed(by: disposeBag)
+        
+        viewModel.filterCountries(by: "")
+        
+        XCTAssertEqual(observedCountries, expectedCountries)
     }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
+    
+    func testFilterCountriesWhenSearchTextIsNotEmpty() {
+        let searchText = "Pol"
+        
+        var observedCountries: [Country] = []
+        _ = viewModel.filteredCountries
+            .subscribe(onNext: { countries in
+                observedCountries = countries
+            })
+            .disposed(by: disposeBag)
+        
+        viewModel.filterCountries(by: searchText)
+        
+        XCTAssertEqual(observedCountries.count, 1)
+        XCTAssertEqual(observedCountries.first?.name, "Poland")
     }
-
+    
+    func testFilterCountriesWhenSearchTextIsNotValid() {
+        let searchText = "blabla"
+        
+        var observedCountries: [Country] = []
+        _ = viewModel.filteredCountries
+            .subscribe(onNext: { countries in
+                observedCountries = countries
+            })
+            .disposed(by: disposeBag)
+        
+        viewModel.filterCountries(by: searchText)
+        
+        XCTAssertEqual(observedCountries.count, 0)
+    }
+    
+    func testSwitchSelectedCountries() {
+        let initialSelectedCurrencyFrom = viewModel.selectedCurrencyFrom.value
+        let initialSelectedCurrencyTo = viewModel.selectedCurrencyTo.value
+        viewModel.switchSelectedCountries()
+        
+        XCTAssertEqual(viewModel.selectedCurrencyFrom.value, initialSelectedCurrencyTo)
+        XCTAssertEqual(viewModel.selectedCurrencyTo.value, initialSelectedCurrencyFrom)
+    }
+    
+    func testSuccessfulRequest() {
+        viewModel.getRateValues()
+        let expectedResult = FxRateResponse(from: "PLN", to: "UAH", rate: 1.2345, fromAmount: 100.0, toAmount: 123.45)
+        
+        viewModel.fxRatesConversionResult
+            .subscribe { response in
+                XCTAssertEqual(response, expectedResult)
+            }
+            .disposed(by: disposeBag)
+    }
 }
+

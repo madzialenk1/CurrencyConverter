@@ -7,10 +7,16 @@
 
 import Foundation
 
-import Foundation
-
-struct Country {
+struct Country: Equatable {
     let name: String
     let currency: Currency
     let flagIconName: String
+}
+
+extension Country {
+    static func == (lhs: Country, rhs: Country) -> Bool {
+        return lhs.name == rhs.name &&
+        lhs.currency == rhs.currency &&
+        lhs.flagIconName == rhs.flagIconName
+    }
 }

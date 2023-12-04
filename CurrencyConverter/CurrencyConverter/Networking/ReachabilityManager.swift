@@ -13,30 +13,38 @@ class ReachabilityManager {
     
     private let reachability = try? Reachability()
     
-    var isInternetAvailable: Observable<Bool> {
-        return Observable.create { observer in
-            do {
-                try self.reachability?.startNotifier()
-                self.reachability?.whenReachable = { _ in
-                    observer.onNext(true)
-                }
-                self.reachability?.whenUnreachable = { _ in
-                    observer.onNext(false)
-                }
-            } catch {
-                observer.onError(error)
-            }
-            
-            return Disposables.create {
-                self.reachability?.stopNotifier()
-            }
-        }
-        .startWith(self.reachability?.connection != .unavailable)
-        .distinctUntilChanged()
+    private let internetAvailabilitySubject = BehaviorSubject<Bool?>(value: nil)
+    
+    var isInternetAvailable: Observable<Bool?> {
+        return internetAvailabilitySubject
     }
     
-    private init() {}
+    private init() {
+        do {
+            try reachability?.startNotifier()
+            setupReachabilityObservers()
+        } catch {
+            print("Error starting reachability notifier: \(error)")
+        }
+    }
+    
+    private func setupReachabilityObservers() {
+        reachability?.whenReachable = { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self?.internetAvailabilitySubject.onNext(true)
+            }
+        }
+        
+        reachability?.whenUnreachable = { [weak self] _ in
+            self?.internetAvailabilitySubject.onNext(false)
+        }
+    }
+    
+    func stopMonitoring() {
+        reachability?.stopNotifier()
+    }
+    
+    deinit {
+        stopMonitoring()
+    }
 }
-
-
-
